@@ -30,7 +30,7 @@ services:
       - postgres
     restart: always
     ports:
-      - "3000:3000"
+      - "3000:80" # nginx привет
     environment:
       DB_ADAPTER: postgresql
       DB_HOST:    postgres
@@ -38,6 +38,7 @@ services:
       DB_NAME:    redmine_production
       DB_USER:    redmine
       DB_PASS:    secret_pass
+      DB_CREATE: "false" # с нулевой хз нужно ли выключать
     volumes:
       - redmine_data:/home/redmine/data
     networks:
@@ -61,8 +62,11 @@ services:
     environment:
       MONGO_URL:      mongodb://mongo:27017/rocketchat
       ROOT_URL:       http://localhost:3001
-      ADMIN_EMAIL:    admin@example.com
-      ADMIN_PASSWORD: admin111111
+      ADMIN_EMAIL:    admin@example.com # своё
+      ADMIN_PASSWORD: admin123
+      OVERWRITE_SETTING_Accounts_RequireEmailVerification: "false"
+      OVERWRITE_SETTING_Accounts_SendEmailOnRegistration: "false"
+      OVERWRITE_SETTING_Notifications_Email: "false"
     volumes:
       - rocketchat_data:/app/uploads
     networks:
