@@ -14,10 +14,11 @@ services:
   postgres:
     image: postgres:15
     restart: always
-    environment: 
-      POSTGRES_DB: redmine_production
-      POSTGRES_USER: redmine
-      POSTGRES_PASSWORD:
+    environment:
+      POSTGRES_DB:       redmine_production
+      POSTGRES_USER:     redmine
+      POSTGRES_PASSWORD: secret_pass
+
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -31,9 +32,12 @@ services:
     ports:
       - "3000:3000"
     environment:
-      REDMINE_DB_POSTGRES: postgres
-      REDMINE_DB_USERNAME: redmine
-      REDMINE_DB_PASSWORD:
+      DB_ADAPTER: postgresql
+      DB_HOST:    postgres
+      DB_PORT:    5432
+      DB_NAME:    redmine_production
+      DB_USER:    redmine
+      DB_PASS:    secret_pass
     volumes:
       - redmine_data:/home/redmine/data
     networks:
@@ -55,10 +59,10 @@ services:
     ports:
       - "3001:3000"
     environment:
-      MONGO_URL: mongodb://mongo:27017/rocketchat
-      ROOT_URL: http://localhost:3001
-      ADMIN_EMAIL: admin@example.com
-      ADMIN_PASSWORD:
+      MONGO_URL:      mongodb://mongo:27017/rocketchat
+      ROOT_URL:       http://localhost:3001
+      ADMIN_EMAIL:    admin@example.com
+      ADMIN_PASSWORD: admin111111
     volumes:
       - rocketchat_data:/app/uploads
     networks:
