@@ -1,0 +1,65 @@
+version: '3.8'
+
+networks:
+  project_net:
+    driver: bridge
+
+volumes:
+  redmine_data:
+  postgres_data:
+  rocketchat_data:
+  mongo_data:
+
+services:
+  postgres:
+    image: postgres:15
+    restart: always
+    environment: 
+      POSTGRES_DB: redmine_production
+      POSTGRES_USER: redmine
+      POSTGRES_PASSWORD:
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - project_net
+
+  redmine:
+    image: sameersbn/redmine:6.0.5
+    depends_on:
+      - postgres
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      REDMINE_DB_POSTGRES: postgres
+      REDMINE_DB_USERNAME: redmine
+      REDMINE_DB_PASSWORD:
+    volumes:
+      - redmine_data:/home/redmine/data
+    networks:
+      - project_net
+
+  mongo:
+    image: mongo:6
+    restart: always
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - project_net
+
+  rocketchat:
+    image: rocketchat/rocket.chat:latest
+    depends_on:
+      - mongo
+    restart: always
+    ports:
+      - "3001:3000"
+    environment:
+      MONGO_URL: mongodb://mongo:27017/rocketchat
+      ROOT_URL: http://localhost:3001
+      ADMIN_EMAIL: admin@example.com
+      ADMIN_PASSWORD:
+    volumes:
+      - rocketchat_data:/app/uploads
+    networks:
+      - project_net
