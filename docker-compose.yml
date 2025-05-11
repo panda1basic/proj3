@@ -1,16 +1,15 @@
-version: "3.8"
-
+version: '3.8'
 networks:
   project-net: {}
 
 volumes:
-  gitlab_data: {}
-  prometheus_data: {}
-  grafana_data: {}
   postgres_data: {}
-  redmine_data: {}
-  mongo_data: {}
+  redmine_data:  {}
+  mongo_data:    {}
   rocketchat_data: {}
+  gitlab_data:   {}
+  prometheus_data: {}
+  grafana_data:  {}
 
 services:
   gitlab_loc:
@@ -18,25 +17,25 @@ services:
     container_name: gitlab_loc
     restart: always
     ports:
-      - "8929:80"         # WEB — свободный порт
-      - "2222:22"
-      - "9093:9090"       # метрики наружу
-    volumes:
-      - gitlab_data:/var/opt/gitlab
+      - "8929:80"        # WEB UI
+      - "2222:22"        # SSH
+      - "9093:9090"      # Prometheus (внутри 9090)
     environment:
       OVERWRITE_SETTING_Accounts_RequireEmailVerification: "false"
       OVERWRITE_SETTING_Accounts_SendEmailOnRegistration: "false"
       OVERWRITE_SETTING_Notifications_Email: "false"
       GITLAB_ROOT_PASSWORD: superpass
       GITLAB_OMNIBUS_CONFIG: |
-        external_url 'http://192.168.0.41:8929'
+        external_url 'http://192.168.0.41:8929' 
         prometheus['enable'] = true
         prometheus['listen_address'] = '0.0.0.0:9090'
         gitlab_rails['monitoring_whitelist'] = ['0.0.0.0/0']
+    volumes:
+      - gitlab_data:/var/opt/gitlab
     networks: [project-net]
 
   prometheus:
-    image: prom/prometheus
+    image: prom/prometheus:latest
     container_name: prometheus
     restart: always
     ports: ["9090:9090"]
@@ -64,8 +63,8 @@ services:
     image: postgres:15
     container_name: postgres
     restart: always
-    ports: ["5432"]
-    volumes: [postgres_data:/var/lib/postgresql/data]
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     environment:
       POSTGRES_DB: redmine_prod
       POSTGRES_USER: redmine
@@ -78,26 +77,30 @@ services:
     restart: always
     depends_on: [postgres]
     ports: ["8080:3000"]
-    volumes: [redmine_data:/usr/src/redmine/files]
+    volumes:
+      - redmine_data:/usr/src/redmine/files
     environment:
       REDMINE_DB_POSTGRES: postgres
       REDMINE_DB_USERNAME: redmine
       REDMINE_DB_PASSWORD: redpgpass
       REDMINE_DB_DATABASE: redmine_prod
+      REDMINE_SECRET_KEY_BASE: generate_with_rake_secret
     networks: [project-net]
 
   mongo:
     image: mongo:6
     container_name: mongo
     restart: always
-    volumes: [mongo_data:/data/db]
+    volumes:
+      - mongo_data:/data/db
     networks: [project-net]
 
   rocketchat:
-    image: rocketchat/rocket.chat
+    image: rocketchat/rocket.chat:latest
     container_name: rocketchat
     restart: always
     depends_on: [mongo]
     ports: ["3001:3000"]
-    volumes: [rocketchat_data:/app/uploads]
+    volumes:
+      - rocketchat_data:/app/uploads
     networks: [project-net]
