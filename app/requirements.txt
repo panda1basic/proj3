@@ -1,0 +1,3 @@
+flask
+prometheus-client
+prometheus-flask-exporter>=0.22.0
