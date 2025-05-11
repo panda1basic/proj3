@@ -4,41 +4,41 @@ networks:
   project-net: {}
 
 volumes:
-  postgres_data: {}
-  redmine_data:  {}
-  mongo_data:    {}
-  rocketchat_data: {}
-  gitlab_data:   {}
+  gitlab_data: {}
   prometheus_data: {}
-  grafana_data:  {}
+  grafana_data: {}
+  postgres_data: {}
+  redmine_data: {}
+  mongo_data: {}
+  rocketchat_data: {}
 
 services:
   gitlab_loc:
     image: gitlab/gitlab-ce:17.9.2-ce.0
-    restart: always
     container_name: gitlab_loc
+    restart: always
     ports:
-      - "7029:80"      # WEB
-      - "2222:22"      # SSH
-      - "9093:9090"    # метрики наружу
+      - "8929:80"         # WEB — свободный порт
+      - "2222:22"
+      - "9093:9090"       # метрики наружу
+    volumes:
+      - gitlab_data:/var/opt/gitlab
     environment:
       OVERWRITE_SETTING_Accounts_RequireEmailVerification: "false"
       OVERWRITE_SETTING_Accounts_SendEmailOnRegistration: "false"
       OVERWRITE_SETTING_Notifications_Email: "false"
       GITLAB_ROOT_PASSWORD: superpass
       GITLAB_OMNIBUS_CONFIG: |
-        external_url 'http://192.168.0.41:7029'        # ← IP/порт вашего хоста
+        external_url 'http://192.168.0.41:8929'
         prometheus['enable'] = true
         prometheus['listen_address'] = '0.0.0.0:9090'
         gitlab_rails['monitoring_whitelist'] = ['0.0.0.0/0']
-    volumes:
-      - gitlab_data:/var/opt/gitlab
     networks: [project-net]
 
   prometheus:
     image: prom/prometheus
-    restart: always
     container_name: prometheus
+    restart: always
     ports: ["9090:9090"]
     volumes:
       - prometheus_data:/etc/prometheus
@@ -46,8 +46,8 @@ services:
 
   grafana:
     image: grafana/grafana
-    restart: always
     container_name: grafana
+    restart: always
     ports: ["3090:3000"]
     volumes:
       - grafana_data:/var/lib/grafana
@@ -55,14 +55,16 @@ services:
 
   webapp:
     build: app/.
-    restart: always
     container_name: webapp
+    restart: always
     ports: ["5000:5000"]
     networks: [project-net]
 
   postgres:
     image: postgres:15
+    container_name: postgres
     restart: always
+    ports: ["5432"]
     volumes: [postgres_data:/var/lib/postgresql/data]
     environment:
       POSTGRES_DB: redmine_prod
@@ -72,6 +74,7 @@ services:
 
   redmine:
     image: redmine:5.1.2
+    container_name: redmine
     restart: always
     depends_on: [postgres]
     ports: ["8080:3000"]
@@ -85,12 +88,14 @@ services:
 
   mongo:
     image: mongo:6
+    container_name: mongo
     restart: always
     volumes: [mongo_data:/data/db]
     networks: [project-net]
 
   rocketchat:
     image: rocketchat/rocket.chat
+    container_name: rocketchat
     restart: always
     depends_on: [mongo]
     ports: ["3001:3000"]
