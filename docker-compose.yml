@@ -39,6 +39,7 @@ services:
       REDMINE_DB_PASSWORD: redpgpass
       REDMINE_DB_DATABASE: redmine_prod
       REDMINE_SECRET_KEY_BASE: generate_with_rake_secret
+      # DB_CREATE: "false" # с нулевой не нужно выключать
     volumes:
       - redmine_data:/usr/src/redmine/files
     networks:
@@ -75,6 +76,9 @@ services:
       - ./gitlab_data/logs:/var/log/gitlab
       - ./gitlab_data/config:/etc/gitlab
     environment:
+      OVERWRITE_SETTING_Accounts_RequireEmailVerification: "false" # отключаем подтверждения по mail
+      OVERWRITE_SETTING_Accounts_SendEmailOnRegistration: "false" # отключаем подтверждения по mail
+      OVERWRITE_SETTING_Notifications_Email: "false" # отключаем подтверждения по mail
       GITLAB_OMNIBUS_CONFIG: |
         external_url 'http://url'
         prometheus['metric_port'] = 9093
