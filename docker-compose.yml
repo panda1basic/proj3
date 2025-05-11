@@ -58,7 +58,7 @@ services:
       - ./rocketchat_data:/app/uploads
     networks:
       - project-net
-
+    
   gitlab_loc:
     image: gitlab/gitlab-ce:17.9.2-ce.0
     container_name: gitlab_loc
@@ -66,7 +66,7 @@ services:
     ports:
       - "80:80"
       - "2022:22"
-      - "9093:9093"
+      - "9093:9090"
     environment:
       OVERWRITE_SETTING_Accounts_RequireEmailVerification: "false"
       OVERWRITE_SETTING_Accounts_SendEmailOnRegistration: "false"
@@ -75,7 +75,7 @@ services:
       GITLAB_OMNIBUS_CONFIG: |
         external_url 'http://gitlab_loc'
         prometheus['enable'] = true
-        prometheus['listen_address'] = '0.0.0.0:9093'
+        prometheus['listen_address'] = '0.0.0.0:9090'
         gitlab_rails['monitoring_whitelist'] = ['0.0.0.0/0']
     volumes:
       - ./gitlab_data/data:/var/opt/gitlab
