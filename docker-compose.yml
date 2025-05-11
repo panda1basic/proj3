@@ -64,7 +64,7 @@ services:
       REDMINE_SECRET_KEY_BASE: generate_with_rake_secret
     volumes:
       - redmine_data:/usr/src/redmine/files
-      - ./gitlab_data/data/git-data/repositories:/mnt/gitlab_repos:ro
+      - ./gitlab_data/data/git-data/repositories:/usr/src/redmine/repos:ro
     networks:
       - project-net
 
