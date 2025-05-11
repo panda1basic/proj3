@@ -64,8 +64,8 @@ services:
     container_name: gitlab_loc
     restart: always
     ports:
-      - "80:80"
-      - "2022:22"
+      - "8929:80"
+      - "2222:22"
       - "9093:9090"
     environment:
       OVERWRITE_SETTING_Accounts_RequireEmailVerification: "false"
@@ -73,7 +73,7 @@ services:
       OVERWRITE_SETTING_Notifications_Email: "false"
       GITLAB_ROOT_PASSWORD: superpass
       GITLAB_OMNIBUS_CONFIG: |
-        external_url 'http://gitlab_loc'
+        external_url 'http://192.168.0.41:8929'
         prometheus['enable'] = true
         prometheus['listen_address'] = '0.0.0.0:9090'
         gitlab_rails['monitoring_whitelist'] = ['0.0.0.0/0']
