@@ -1,24 +1,69 @@
-version: '3.8'
+version: "3.8"
 
 networks:
-  project-net:
-    driver: bridge
+  project-net: {}
 
 volumes:
-  postgres_data:
-  redmine_data:
-  mongo_data:
-  rocketchat_data:
-  gitlab_data:
-  grafana_data:
-  prometheus_data:
+  postgres_data: {}
+  redmine_data:  {}
+  mongo_data:    {}
+  rocketchat_data: {}
+  gitlab_data:   {}
+  prometheus_data: {}
+  grafana_data:  {}
 
 services:
+  gitlab_loc:
+    image: gitlab/gitlab-ce:17.9.2-ce.0
+    restart: always
+    container_name: gitlab_loc
+    ports:
+      - "7029:80"      # WEB
+      - "2222:22"      # SSH
+      - "9093:9090"    # метрики наружу
+    environment:
+      OVERWRITE_SETTING_Accounts_RequireEmailVerification: "false"
+      OVERWRITE_SETTING_Accounts_SendEmailOnRegistration: "false"
+      OVERWRITE_SETTING_Notifications_Email: "false"
+      GITLAB_ROOT_PASSWORD: superpass
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'http://192.168.0.41:7029'        # ← IP/порт вашего хоста
+        prometheus['enable'] = true
+        prometheus['listen_address'] = '0.0.0.0:9090'
+        gitlab_rails['monitoring_whitelist'] = ['0.0.0.0/0']
+    volumes:
+      - gitlab_data:/var/opt/gitlab
+    networks: [project-net]
+
+  prometheus:
+    image: prom/prometheus
+    restart: always
+    container_name: prometheus
+    ports: ["9090:9090"]
+    volumes:
+      - prometheus_data:/etc/prometheus
+    networks: [project-net]
+
+  grafana:
+    image: grafana/grafana
+    restart: always
+    container_name: grafana
+    ports: ["3090:3000"]
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks: [project-net]
+
+  webapp:
+    build: app/.
+    restart: always
+    container_name: webapp
+    ports: ["5000:5000"]
+    networks: [project-net]
+
   postgres:
     image: postgres:15
     restart: always
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+    volumes: [postgres_data:/var/lib/postgresql/data]
     environment:
       POSTGRES_DB: redmine_prod
       POSTGRES_USER: redmine
@@ -36,7 +81,6 @@ services:
       REDMINE_DB_USERNAME: redmine
       REDMINE_DB_PASSWORD: redpgpass
       REDMINE_DB_DATABASE: redmine_prod
-      REDMINE_SECRET_KEY_BASE: generate_with_rake_secret
     networks: [project-net]
 
   mongo:
@@ -46,49 +90,9 @@ services:
     networks: [project-net]
 
   rocketchat:
-    image: rocketchat/rocket.chat:latest
+    image: rocketchat/rocket.chat
     restart: always
     depends_on: [mongo]
     ports: ["3001:3000"]
     volumes: [rocketchat_data:/app/uploads]
-    networks: [project-net]
-
-  gitlab_loc:
-    image: gitlab/gitlab-ce:17.9.2-ce.0
-    restart: always
-    ports:
-      - "8929:80"        # WEB
-      - "2222:22"        # SSH
-      - "9093:9090"      # Prometheus
-    environment:
-      OVERWRITE_SETTING_Accounts_RequireEmailVerification: "false"
-      OVERWRITE_SETTING_Accounts_SendEmailOnRegistration: "false"
-      OVERWRITE_SETTING_Notifications_Email: "false"
-      GITLAB_ROOT_PASSWORD: superpass
-      GITLAB_OMNIBUS_CONFIG: |
-        external_url 'http://192.168.0.41:8929'
-        prometheus['enable'] = true
-        prometheus['listen_address'] = '0.0.0.0:9090'
-        gitlab_rails['monitoring_whitelist'] = ['0.0.0.0/0']
-    volumes: [gitlab_data:/var/opt/gitlab]
-    networks: [project-net]
-
-  prometheus:
-    image: prom/prometheus:latest
-    restart: always
-    ports: ["9090:9090"]
-    volumes: [prometheus_data:/etc/prometheus]
-    networks: [project-net]
-
-  grafana:
-    image: grafana/grafana
-    restart: always
-    ports: ["3090:3000"]
-    volumes: [grafana_data:/var/lib/grafana]
-    networks: [project-net]
-
-  webapp:
-    build: app/.
-    restart: always
-    ports: ["5000:5000"]
     networks: [project-net]
