@@ -68,24 +68,25 @@ services:
 
   gitlab_loc:
     image: gitlab/gitlab-ce:17.9.2-ce.0
-    restart: always
     container_name: gitlab_loc
-    volumes:
-      - ./gitlab_data/data:/var/opt/gitlab
-      - ./gitlab_data/logs:/var/log/gitlab
-      - ./gitlab_data/config:/etc/gitlab
-    environment:
-      GITLAB_OMNIBUS_CONFIG: |
-        external_url 'http://url'
-        prometheus['metric_port'] = 9093
-        gitlab_rails['prometheus_monitoring'] = true
-      GITLAB_ROOT_PASSWORD: superpass
+    restart: always
     ports:
       - "80:80"
       - "2022:22"
       - "9093:9093"
-    networks:
-      - project-net
+    volumes:
+      - gitlab_data/data:/var/opt/gitlab
+      - gitlab_data/logs:/var/log/gitlab
+      - gitlab_data/config:/etc/gitlab
+    environment:
+      GITLAB_ROOT_PASSWORD: superpass
+      OVERWRITE_SETTING_Accounts_RequireEmailVerification: "false"
+      OVERWRITE_SETTING_Accounts_SendEmailOnRegistration: "false"
+      OVERWRITE_SETTING_Notifications_Email: "false"
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'http://gitlab_loc'
+        prometheus['enable'] = true
+        gitlab_rails['monitoring_whitelist'] = ['0.0.0.0/0']
 
   prometheus:
     image: prom/prometheus:latest
