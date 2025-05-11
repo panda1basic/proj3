@@ -1,91 +1,74 @@
 version: '3.8'
+
 networks:
-  project-net: {}
+  project-net:
+    driver: bridge
 
 volumes:
   postgres_data: {}
-  redmine_data:  {}
-  mongo_data:    {}
+  redmine_data: {}
+  mongo_data: {}
   rocketchat_data: {}
-  gitlab_data:   {}
+  grafana_data: {}
   prometheus_data: {}
-  grafana_data:  {}
 
 services:
   gitlab_loc:
     image: gitlab/gitlab-ce:17.9.2-ce.0
-    container_name: gitlab_loc
     restart: always
+    container_name: gitlab_loc
     ports:
-      - "8929:80"        # WEB UI
-      - "2222:22"        # SSH
-      - "9093:9090"      # Prometheus (внутри 9090)
+      - "8929:80"
+      - "2222:22"
+      - "9093:9090"
     environment:
       OVERWRITE_SETTING_Accounts_RequireEmailVerification: "false"
       OVERWRITE_SETTING_Accounts_SendEmailOnRegistration: "false"
       OVERWRITE_SETTING_Notifications_Email: "false"
       GITLAB_ROOT_PASSWORD: superpass
       GITLAB_OMNIBUS_CONFIG: |
-        external_url 'http://192.168.0.41:8929' 
+        external_url 'http://192.168.0.41:8929'
         prometheus['enable'] = true
         prometheus['listen_address'] = '0.0.0.0:9090'
         gitlab_rails['monitoring_whitelist'] = ['0.0.0.0/0']
     volumes:
-      - gitlab_data:/var/opt/gitlab
-    networks: [project-net]
-
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: prometheus
-    restart: always
-    ports: ["9090:9090"]
-    volumes:
-      - prometheus_data:/etc/prometheus
-    networks: [project-net]
-
-  grafana:
-    image: grafana/grafana
-    container_name: grafana
-    restart: always
-    ports: ["3090:3000"]
-    volumes:
-      - grafana_data:/var/lib/grafana
-    networks: [project-net]
-
-  webapp:
-    build: app/.
-    container_name: webapp
-    restart: always
-    ports: ["5000:5000"]
-    networks: [project-net]
+      - ./gitlab_data/data:/var/opt/gitlab
+      - ./gitlab_data/logs:/var/log/gitlab
+      - ./gitlab_data/config:/etc/gitlab
+    networks:
+      - project-net
 
   postgres:
     image: postgres:15
-    container_name: postgres
     restart: always
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+    container_name: postgres
     environment:
       POSTGRES_DB: redmine_prod
       POSTGRES_USER: redmine
       POSTGRES_PASSWORD: redpgpass
-    networks: [project-net]
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - project-net
 
   redmine:
     image: redmine:5.1.2
     container_name: redmine
+    depends_on:
+      - postgres
     restart: always
-    depends_on: [postgres]
-    ports: ["8080:3000"]
-    volumes:
-      - redmine_data:/usr/src/redmine/files
+    ports:
+      - "8080:3000"
     environment:
       REDMINE_DB_POSTGRES: postgres
       REDMINE_DB_USERNAME: redmine
       REDMINE_DB_PASSWORD: redpgpass
       REDMINE_DB_DATABASE: redmine_prod
       REDMINE_SECRET_KEY_BASE: generate_with_rake_secret
-    networks: [project-net]
+    volumes:
+      - redmine_data:/usr/src/redmine/files
+    networks:
+      - project-net
 
   mongo:
     image: mongo:6
@@ -93,14 +76,49 @@ services:
     restart: always
     volumes:
       - mongo_data:/data/db
-    networks: [project-net]
+    networks:
+      - project-net
 
   rocketchat:
     image: rocketchat/rocket.chat:latest
     container_name: rocketchat
+    depends_on:
+      - mongo
     restart: always
-    depends_on: [mongo]
-    ports: ["3001:3000"]
+    ports:
+      - "3001:3000"
     volumes:
       - rocketchat_data:/app/uploads
-    networks: [project-net]
+    networks:
+      - project-net
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./prometheus_data/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    restart: always
+    networks:
+      - project-net
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    volumes:
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3090:3000"
+    restart: always
+    networks:
+      - project-net
+
+  webapp:
+    build: app/.
+    container_name: webapp
+    ports:
+      - "5000:5000"
+    restart: always
+    networks:
+      - project-net
