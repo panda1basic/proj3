@@ -9,4 +9,4 @@ scrape_configs:
   - job_name: 'gitlab_loc'
     metrics_path: '/metrics'
     static_configs:
-      - targets: ['gitlab_loc:80']
+      - targets: ['gitlab_loc:9093']
